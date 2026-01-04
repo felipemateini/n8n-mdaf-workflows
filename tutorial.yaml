@@ -1,0 +1,67 @@
+
+---
+## Versão em Português
+
+## 🚀 Como Implantar
+
+1. Importe o JSON do workflow no n8n
+2. Configure as credenciais
+3. Ative o fluxo
+4. Envie um áudio no Telegram e teste a aprovação + inserção no BigQuery
+
+---
+
+## 🔒 Observações
+
+- O fluxo **não salva o áudio permanentemente**
+- O BigQuery é a **fonte única de verdade dos registros**
+- A etapa de aprovação evita entradas incorretas
+
+---
+
+## 🤝 Contribuição
+
+Você pode fazer fork e evoluir o projeto adicionando integrações como:
+- Looker
+- Power BI
+- MongoDB
+- Camadas de enriquecimento de dados
+
+---
+
+**Mantido por:** Felipe Mateini
+
+---
+## English version
+
+## 🚀 How to Deploy
+
+1. Import the workflow JSON into n8n
+2. Configure your credentials:
+ - **Telegram**
+ - **Google Gemini**
+ - **BigQuery**
+3. Activate the workflow
+4. Send a voice message on Telegram and test approval + insertion
+
+---
+
+## 🔒 Notes
+
+- The workflow does **not store the audio file permanently**
+- BigQuery table is used as the **single source of truth for expense records**
+- Approval step prevents incorrect or unvalidated entries
+
+---
+
+## 🤝 Contribution
+
+Feel free to fork, improve the taxonomy, or add new integrations such as:
+- Looker
+- Power BI
+- MongoDB
+- Data enrichment layers
+
+---
+
+**Maintained by:** Felipe Mateini
