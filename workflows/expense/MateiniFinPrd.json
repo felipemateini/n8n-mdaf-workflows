@@ -1,0 +1,563 @@
+{
+  "name": "MateiniFinPrd",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1952,
+        288
+      ],
+      "id": "6414ead6-d964-4286-8f46-bf46ae82142c",
+      "name": "Recebe Mensagem",
+      "webhookId": "7c378368-092e-476a-bf7b-784e377bcd92",
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Aguarde um instante!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1744,
+        288
+      ],
+      "id": "9072e2cc-669c-469b-9e6f-9839b28d2b56",
+      "name": "Pede para aguardar",
+      "webhookId": "14b66539-5f7c-40aa-80eb-cd5a23c88acf",
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Recebe Mensagem').item.json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1296,
+        128
+      ],
+      "id": "ac988b86-2cc6-432a-9538-ac76294c8557",
+      "name": "Obtém o arquivo de áudio",
+      "webhookId": "f84a73d2-9786-4e92-a6f8-3ed977167e35",
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Você é um assistente financeiro que analisa as gravações de voz em português do Brasil.\nSua Tarefa é **transcrever o áudio** e **extrair os seguintes dados de despesa**\n\n{\n  \"Data_\": \"\",\n  \"Categorias\": \"\",\n  \"Fonte\": \"\",\n  \"Modalidade\": \"\",\n  \"Valor\": 0,\n  \"Parcelamento\": \"\",\n  \"Evidencias\": \"\",\n  \"Tipo\": \"\",\n  \"Descricao\": \"\"\n}\n\nRegras:\n\nTranscreva e analise o áudio. Extraia a data da compra.\n- \"Data_\": use o formato ISO (YYYY-MM-DD).\n  - data da mensagem: {{new Date($node[\"Recebe Mensagem\"].json.message.date * 1000).toISOString().slice(0,10)}})\n  - Se o áudio mencionar a data de forma explícita (ex: dez de novembro de 2025) use a data informada.\n  - Se o áudio mencionar \"hoje\", \"ontem\" ou um dia da semana (Ex; terça passada), interprete em relação à data da mensagem.\n  - Se o áudio não mencionar nenhuma data, use a data da mensagem \n    \n- \"Categorias\": classsique em uma das opções: [\"Investimento\", \"Educação\", \"Moradia\", \"Alimentação\", \"Bem-Estar\", \"Saúde\", \"Pessoal\", \"Transporte\", \"Seguro\", \"Imposto\", \"Doença\", \"Dívida\"\n- \"Tipo\":  para cada categoria, classique em tipos > \n\tPara a categoria Investimento: [\"Liberdade Financeira\", \"Projetos\", \"Reserva de Emergência\", \"Previdência\"];\n\tPara a categoria Educação: [\"Material Escolar\", \"Mensalidade Escolar\", \"Cursos\", \"Projeto Escolar\"];\n\tPara a categoria Moradia: [\"Financiamento\", \"Energia Elétrica\", \"Água e Esgoto\", \"Telefone e Internet\", \"Streaming\", \"Manutenção\", \"Segurança\", \"Gás\"];\n\tPara a categoria Alimentação: [\"Mercado\", \"Restaurante\"];\n\tPara a categoria Bem-Estar: [\"Aniversários\", \"Presentes\", \"Entradas\", \"Doação\", \"Estadias\"];\n\tPara a categoria Saúde: [\"Atividade Física\", \"Exames\", \"Consultas\"];\n\tPara a categoria Pessoal: [\"Vestuário\", \"Asseio\"];\n\tPara a categoria Transporte: [\"Passagens\", \"Estacionamento\", \"Combustível\", \"Financiamento Auto\", \"Pedágio\", \"Manutenção e Oficina\"];\n\tPara a categoria Seguro: [\"Automóvel\", \"Vida\"];\n\tPara a categoria Imposto: [\"INSS\", \"IPTU\", \"IRRF\", \"Taxas Bancárias\", \"Taxas Públicas\", \"IPVA\"];\n\tPara a categoria Doença: [\"Medicamentos\"];\n\tPara a categoria Dívida: [\"Empréstimos\", \"Renegociação\"]\n- \"Fonte\": Fonte do recurso que pagou a despesa (Ex.: Santander, Nubank, Bradesco)\n- \"Modalidade\": Classifique em das opções:  [\"Crédito\", \"Débito\"] \n- \"Valor\": Número em reais com duas casas decimais (Aceite expressões como \"45 reais\", \"R$23,50\", \"vinte e cinco reais\", \"trinta com 60\")\n- \"Parcelamento\" No caso da \"Modalidade\" ser \"Crédito\" há a possibilidade da compra ter sido parcelada, neste caso, identifique em quantas vezes foi feito o parcelamento se na transcrição houver a palavra \"Parcelado\", ou \"vezes\" e coloquem em numeral com o \"x\"no final (Ex: 10x, 5x, etc.), caso nada tenha sido mencionado deixe em branco este campo \n- \"Evidencias\": Deixe em branco\nImportante:\n-Sempre responda **somente JSON válido**, sem texto extra, explicações ou comentários.\n- Não adicione \"'''json\"no início comece direto em \"{\",.\n- Não invente valores nem categorias ou tipos - Restrinja-se ãs que foram passadas nas regras.\n- \"Descricao\": descreva em poucas palavras a despesa mencionda (ex: \"almoço em restaurante\", \"compras no mercado\", \"uber para o trabalho\", \"remédio na farmácia\").\n- exemplo de saída:\n{\n  \"Data_\": \"2025-11-10\",\n  \"Categorias\": \"Alimentação\",\n  \"Fonte\": \"Nubank\",\n  \"Modalidade\": \"Crédito\",\n  \"Valor\": 45,90,\n  \"Parcelamento\": \"\",\n  \"Evidencias\": \"\",\n  \"Tipo\": \"Restaurante\",\n  \"Descricao\": \"almoço em restaurante\"\n}",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        128
+      ],
+      "id": "4d54fe1a-5f59-42cf-9971-d45327ee8660",
+      "name": "Analisa o áudio",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Qx1uIMbwUNq0pOz3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrai o texto bruto do campo content.parts[0].text\nlet rawText = $input.first().json.content.parts[0].text;\n\n// Remove marcações de código como ```json e ```\nrawText = rawText.replace(/```json|```/g, \"\").trim();\n\ntry {\n  // Converte o texto em objeto JSON\n  const parsed = JSON.parse(rawText);\n\n  // Monta o objeto com tipos corretos\n  const result = {\n    Data_: /^\\d{4}-\\d{2}-\\d{2}$/.test(parsed.Data_) ? parsed.Data_ : null,\n    Categorias: parsed.Categorias?.trim() ? String(parsed.Categorias) : null,\n    Fonte: parsed.Fonte?.trim() ? String(parsed.Fonte) : null,\n    Modalidade: parsed.Modalidade?.trim() ? String(parsed.Modalidade) : null,\n    Valor: parsed.Valor !== undefined && parsed.Valor !== null && parsed.Valor !== \"\" ? parseFloat(parsed.Valor) : null,\n    Parcelamento: parsed.Parcelamento?.trim() ? String(parsed.Parcelamento) : null,\n    Evidencias: parsed.Evidencias?.trim() ? String(parsed.Evidencias) : null,\n    Tipo: parsed.Tipo?.trim() ? String(parsed.Tipo) : null,\n    Descricao: parsed.Descricao?.trim() ? String(parsed.Descricao) : null\n  };\n\n\n  return [{ json: result }];\n} catch (error) {\n  throw new Error(\"Erro ao converter o texto em JSON: \" + error.message);\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        128
+      ],
+      "id": "adde4a26-3354-41ff-bd8d-cf285713dd13",
+      "name": "Transforma a saída em formato JSON"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "projectId": {
+          "__rl": true,
+          "value": "financeiro-mateini-001",
+          "mode": "list",
+          "cachedResultName": "planejamento-financeiro",
+          "cachedResultUrl": "https://console.cloud.google.com/bigquery?project=financeiro-mateini-001"
+        },
+        "datasetId": {
+          "__rl": true,
+          "value": "planejamento_familiar_001",
+          "mode": "list",
+          "cachedResultName": "planejamento_familiar_001"
+        },
+        "tableId": {
+          "__rl": true,
+          "value": "f_debitos_",
+          "mode": "list",
+          "cachedResultName": "f_debitos_"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleBigQuery",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        256
+      ],
+      "id": "e7fd7f9b-d3f5-44f7-b44e-f96935cf1413",
+      "name": "Insere registro na tabela",
+      "credentials": {
+        "googleBigQueryOAuth2Api": {
+          "id": "9Z9fb9DcwQ1tAC5J",
+          "name": "Google BigQuery account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Recebe Mensagem').item.json.message.chat.id }}",
+        "text": "=Resgistrado com sucesso!",
+        "additionalFields": {
+          "appendAttribution": false,
+          "reply_to_message_id": "={{ $json.message.message_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        256
+      ],
+      "id": "3b14e62d-abe8-4ab5-a1f2-187a8d07e9af",
+      "name": "Confirma a Inserção",
+      "webhookId": "924289d2-246e-4da2-927b-4efc33d6aa98",
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Recebe Mensagem').item.json.message.chat.id }}",
+        "text": "=Registro Reprovado! ",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "383ab961-0697-42d1-bc3d-4ec9351e1dd2",
+      "name": "Informa a Recusa",
+      "webhookId": "b4b4fe8c-abf7-4f1f-8728-fd3375b3ba9b",
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Recebe Mensagem').item.json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "866eeeff-3203-41ee-bcf1-a1ab152b43d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3849f109-860f-47f5-a115-f58212caeec6",
+                    "leftValue": "={{ $('Recebe Mensagem').item.json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -1552,
+        288
+      ],
+      "id": "5553b1c8-ed35-47e8-92f9-1d2f86f03067",
+      "name": "Analisa tipo da mensagem"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": "Aprovar",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "id": "866eeeff-3203-41ee-bcf1-a1ab152b43d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reprovar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3849f109-860f-47f5-a115-f58212caeec6",
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": "Reprovar",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Aprovar"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -496,
+        128
+      ],
+      "id": "bcf818b5-0bac-45ec-878c-6d5ffa404dc0",
+      "name": "Analisa Resposta",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Recebe Mensagem').item.json.message.from.id }}",
+        "message": "=Deseja inserir os dados abaixo? \n\n{{$('Analisa o áudio').item.json.content.parts[0].text}}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "✅ Aprovar",
+            "disapproveLabel": "❌ Reprovar"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -704,
+        128
+      ],
+      "id": "1a54e51b-010d-4d61-b8d7-06836c11f9fd",
+      "name": "Pede aprovação",
+      "webhookId": "a83b9ef0-1e8c-459c-8629-f50d89f49b5c",
+      "alwaysOutputData": true,
+      "notesInFlow": false,
+      "executeOnce": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Recebe Mensagem').item.json.message.from.id }}",
+        "text": "Envie uma mensagem de Áudio!",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1296,
+        400
+      ],
+      "id": "44382291-71f1-48b5-818c-0a858705c869",
+      "name": "Send a text message",
+      "webhookId": "bea03fb0-d624-4bb4-aabc-897ca3319a12",
+      "credentials": {
+        "telegramApi": {
+          "id": "USiDrFl4JYyeuzN7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Telegram Credential\n**Double click** to edit me. [Guide](https://docs.n8n.io/integrations/builtin/credentials/telegram/#using-api-bot-access-token)\n\n## Gemini Credential\n**Double click** to edit me. [Guide](https://docs.n8n.io/integrations/builtin/credentials/googleai/)\n\n## Big Query Credential\n**Double click** to edit me. [Guide](https://docs.n8n.io/integrations/builtin/credentials/telegram/#using-api-bot-access-token)",
+        "height": 272,
+        "width": 288,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        480
+      ],
+      "id": "8b17b417-8ddb-432c-be79-cf8ec0689250",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# FLUXO DE AUTOMAÇÃO DE LANÇAMENTO DE DESPESAS",
+        "height": 80,
+        "width": 1008,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1984,
+        -208
+      ],
+      "id": "870beeea-f2c0-4935-a878-bef33930f625",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Recebe Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Pede para aguardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pede para aguardar": {
+      "main": [
+        [
+          {
+            "node": "Analisa tipo da mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtém o arquivo de áudio": {
+      "main": [
+        [
+          {
+            "node": "Analisa o áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa o áudio": {
+      "main": [
+        [
+          {
+            "node": "Transforma a saída em formato JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transforma a saída em formato JSON": {
+      "main": [
+        [
+          {
+            "node": "Pede aprovação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insere registro na tabela": {
+      "main": [
+        [
+          {
+            "node": "Confirma a Inserção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa tipo da mensagem": {
+      "main": [
+        [
+          {
+            "node": "Obtém o arquivo de áudio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisa Resposta": {
+      "main": [
+        [
+          {
+            "node": "Informa a Recusa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insere registro na tabela",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pede aprovação": {
+      "main": [
+        [
+          {
+            "node": "Analisa Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "19caf0b2-f1b0-4bcb-a615-4e22234fb91e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5d24f408dc0d6406f9e0af38e1b6ed74edcf97547798077767f3ba57d148bfde"
+  },
+  "id": "HC9dGkt2rvle2WIp",
+  "tags": []
+}
